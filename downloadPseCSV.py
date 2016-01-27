@@ -9,21 +9,11 @@ import csv
 import sys
 import json
 import re
-#import queryStockDb as qs
+import queryStockDb as qs
 import datetime
 import glob, os
 import urllib2
 import time
-
-import platform
-
-curOS = platform.system()
-
-if curOS == "Windows":
-    import queryStockDb as qs
-elif curOS == "Linux":
-    import queryStockDbLinux as qs
-
 
 def downloadPseCSVdata(quoteData):
     #file to be written to

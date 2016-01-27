@@ -1,4 +1,4 @@
-import MySQLdb
+#import MySQLdb
 import ConfigParser
 from datetime import datetime as dtm
 from datetime import timedelta as tda
@@ -8,15 +8,23 @@ import pandas as pd
 import numpy as np
 import StringIO
 import time
+import platform
+
+curOS = platform.system()
+
+if curOS == "Windows":
+    import MySQLdb as mysqlDriver
+elif curOS == "Linux":
+    import pymysql as mysqlDriver
 
 # Scripts for connecting to local database
 def StockDBConnect(nameDB):
     while True:
         try:
-            db = MySQLdb.connect(host = Hostdb, user = Userdb, passwd = Passdb, db=nameDB)
+            db = mysqlDriver.connect(host = Hostdb, user = Userdb, passwd = Passdb, db=nameDB)
             cur = db.cursor()
             return db, cur
-        except MySQLdb.OperationalError:
+        except mysqlDriver.OperationalError:
             print '.',
 
 def PrintOut(line):
@@ -109,20 +117,20 @@ def writeQuoteDataToDB(quote,curData,source):
                 else:
                     print '>> Warning: Query has no result set (writeQuoteDataToDB)'
                     break
-            except MySQLdb.OperationalError:
+            except mysqlDriver.OperationalError:
                 print '5.',
                 if retry > 10:
                     return
                 else:
                     retry += 1
-            except MySQLdb.ProgrammingError:
+            except mysqlDriver.ProgrammingError:
                 print ">> Unable to write to table '" + quote + "'"
                 return
                     
             
     except KeyError:
         print '>> Error: Writing to database'
-    except MySQLdb.IntegrityError:
+    except mysqlDriver.IntegrityError:
         print '>> Warning: Duplicate entry detected'
         
             
