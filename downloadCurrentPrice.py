@@ -8,6 +8,8 @@ Created on Wed Mar 02 17:30:18 2016
 from bs4 import BeautifulSoup
 import urllib2
 import string
+import time
+import datetime
 
 url = 'http://www.pesobility.com/stock'
 
@@ -21,6 +23,18 @@ html_text = con.read()
 
 #parse the html using beautiful soup library
 soup = BeautifulSoup(html_text, 'html.parser')
+
+#Get the update text to know what time is the data from
+updateText = soup.find(id='TOP_WRAPPER').div.div.div
+textStart = string.find(updateText.span.text, ' ') + 1
+timeStringRaw = (updateText.span.text)[textStart:]
+timeStringRaw = timeStringRaw.replace(".", "")
+timeMilitary = datetime.datetime.strptime(timeStringRaw, "%I:%M %p").strftime("%H:%M")
+timeMilitary = time.strftime("%Y-%m-%d") + " " + timeMilitary
+
+#TODO: Check the text for "today" before proceeding with the extraction
+
+print "Timestamp for values: %s" % (timeMilitary)
 
 #Get the list of companies
 companyList = soup.find_all('tr')
