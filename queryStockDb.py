@@ -74,6 +74,25 @@ def checkTableExistence(table):
         db.close()
         return ret
 
+def ExecuteQuery(query):
+    db, cur = StockDBConnect(Namedb)
+    print query
+    ret = 0
+    try:
+        a = cur.execute(query)
+        if a:
+            db.commit()
+        else:
+            print '>> Warning: Query has no result set (ExecuteQuery)'
+        
+        ret = cur.fetchall()
+    except TypeError:
+        print "ExecuteQuery: Error"
+        ret = 0
+    finally:
+        db.close()
+        return ret
+
 def GetQuoteNamesToUpdate():
     db, cur = StockDBConnect(Namedb)
     #cur.execute("CREATE DATABASE IF NOT EXISTS %s" %nameDB)

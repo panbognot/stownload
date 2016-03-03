@@ -10,6 +10,8 @@ import urllib2
 import string
 import time
 import datetime
+from datetime import timedelta as td
+from datetime import datetime as dt
 import queryStockDb as qs
 import pandas as pd
 import numpy as np
