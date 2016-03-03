@@ -43,6 +43,23 @@ def createTable(table_name):
         
     db.close()
     
+def createCurrentPricesTable():
+    db, cur = StockDBConnect(Namedb)
+#    cur.execute("CREATE DATABASE IF NOT EXISTS %s" %Namedb)
+#    cur.execute("USE %s" % Namedb)
+    
+    cur.execute("CREATE TABLE IF NOT EXISTS current_prices( \
+                `company` VARCHAR(16) NOT NULL, \
+                `timestamp` DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', \
+                `current` FLOAT NULL, \
+                PRIMARY KEY (`company`, `timestamp`)) \
+                ENGINE = InnoDB \
+                DEFAULT CHARACTER SET = utf8 \
+                COMMENT = 'table for storing the current prices of the \
+                downloaded stock data';")
+        
+    db.close()
+    
 def checkTableExistence(table):
     db, cur = StockDBConnect(Namedb)
     query = "SHOW TABLES LIKE '%s'" % table
@@ -136,46 +153,7 @@ def writeQuoteDataToDB(quote,curData,source):
             
     db.close()
 
-#GetSensorList():
-#    returns a list of columnArray objects from the database tables
-#    
-#    Returns:
-#        sensorlist: list
-#            list of columnArray (see class definition above)
-
-#def GetSensorList():
-#    try:
-#        db, cur = StockDBConnect(Namedb)
-#        cur.execute("use "+ Namedb)
-#        
-#        query = 'SELECT name, num_nodes, seg_length, col_length FROM site_column_props'
-#        
-#        df = psql.read_sql(query, db)
-#        df.to_csv("column_properties.csv",index=False,header=False);
-#        
-#        # make a sensor list of columnArray class functions
-#        sensors = []
-#        for s in range(len(df)):
-#            s = columnArray(df.name[s],df.num_nodes[s],df.seg_length[s],df.col_length[s])
-#            sensors.append(s)
-#        return sensors
-#    except:
-#        raise ValueError('Could not get sensor list from database')
-#
-#def GetSensorDF():
-#    try:
-#        #db, cur = StockDBConnect(Namedb)
-#        #cur.execute("use "+ Namedb)
-#        
-#        query = 'SELECT name, num_nodes, seg_length, col_length FROM site_column_props'
-#        
-#        #df = psql.read_sql(query, db)
-#        
-#        df = GetDBDataFrame(query)
-#        return df
-#    except:
-#        raise ValueError('Could not get sensor list from database')
-            
+ 
 # import values from config file
 configFile = "server-config.txt"
 cfg = ConfigParser.ConfigParser()
