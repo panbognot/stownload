@@ -11,6 +11,8 @@ import string
 import time
 import datetime
 import queryStockDb as qs
+import pandas as pd
+import numpy as np
 
 def downloadCurrentPricesData():
     url = 'http://www.pesobility.com/stock'
@@ -38,8 +40,32 @@ def downloadCurrentPricesData():
     
     print "Timestamp for values: %s" % (timeMilitary)
     
+    #Get most recent timestamp
+    latestTS = qs.GetLatestTimestamp("current_prices")
+    
+    try:
+        latestTS = latestTS.strftime("%Y-%m-%d %H:%M:%S")
+    except AttributeError:
+        pass
+
+    #Proceed only if the current timestamp is greater than the latest
+    #   timestamp in the database
+    if timeMilitary > latestTS:
+        print "Proceed with inserting current prices"
+    else:
+        print "Current prices are still up-to-date!"
+        return
+    
     #Get the list of companies
     companyList = soup.find_all('tr')
+    
+    #Get most recent entryid
+    latestid = qs.GetLatestEntryId("current_prices")    
+    if latestid == None:
+        latestid = 0  
+    
+    #Create a dataframe
+    df = pd.DataFrame()    
     
     #Process all companies
     for link in companyList:
@@ -48,7 +74,18 @@ def downloadCurrentPricesData():
         price = link.contents[5]
         priceTextEnd = string.find(price.text, ' ')
         priceText = (price.text)[:priceTextEnd]
-        print "%s Price: %s" % (company, priceText)
+        #print "%s Price: %s" % (company, priceText)
+        
+        latestid = latestid + 1
+        data = {'entryid': latestid, 'current': priceText, 'timestamp': timeMilitary, 'company': company}
+        df = df.append(data, ignore_index=True)
+    
+    #set the index to entryid
+    df = df.set_index(['entryid'])
+    df.index.names = ["entryid"]
+    
+    qs.PushDBDataFrame(df, "current_prices")   
+    print "Finished inserting new data!"
     
     pass
 

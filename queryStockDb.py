@@ -49,15 +49,14 @@ def createCurrentPricesTable():
 #    cur.execute("USE %s" % Namedb)
     
     cur.execute("CREATE TABLE IF NOT EXISTS current_prices( \
-                `company` VARCHAR(16) NOT NULL, \
-                `timestamp` DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00', \
+                `entryid` INT NOT NULL AUTO_INCREMENT, \
+                `timestamp` DATETIME NULL, \
+                `company` VARCHAR(16) NULL, \
                 `current` FLOAT NULL, \
-                PRIMARY KEY (`company`, `timestamp`)) \
+                PRIMARY KEY (`entryid`)) \
                 ENGINE = InnoDB \
                 DEFAULT CHARACTER SET = utf8 \
-                COMMENT = 'table for storing the current prices of the \
-                downloaded stock data';")
-        
+                COMMENT = 'table for storing the current prices of the downloaded stock data';")
     db.close()
     
 def checkTableExistence(table):
@@ -104,6 +103,20 @@ def GetLatestTimestamp(quote):
         return a[0][0]
     else: 
         return '0000-00-00 00:00:00'
+        
+def GetLatestEntryId(quote):
+    db, cur = StockDBConnect(Namedb)
+    #cur.execute("CREATE DATABASE IF NOT EXISTS %s" %nameDB)
+    try:
+        cur.execute("select max(entryid) from %s.%s" %(Namedb,quote))
+    except:
+        print "Error in getting maximum entryid"
+
+    a = cur.fetchall()
+    if a:
+        return a[0][0]
+    else: 
+        return None
 
 def writeQuoteDataToDB(quote,curData,source):
     query = """INSERT IGNORE INTO %s (timestamp,open,high,low,close,average,volume,value,unknown) VALUES """ % quote.lower()
@@ -153,6 +166,13 @@ def writeQuoteDataToDB(quote,curData,source):
             
     db.close()
 
+#Push a dataframe object into a table
+def PushDBDataFrame(df,table_name):     
+    db, cur = StockDBConnect(Namedb)
+
+    df.to_sql(con=db, name=table_name, if_exists='append', flavor='mysql')
+    db.commit()
+    db.close()
  
 # import values from config file
 configFile = "server-config.txt"
