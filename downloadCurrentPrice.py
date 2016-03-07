@@ -17,6 +17,9 @@ import pandas as pd
 import numpy as np
 
 def downloadCurrentPricesData():
+    curTimestamp = time.strftime("%Y-%m-%d %H:%M")
+    print 'Last Run timestamp: %s' % (curTimestamp)
+    
     url = 'http://www.pesobility.com/stock'
     
     #trick the server of pesobility to think that you are accessing through
