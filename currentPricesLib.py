@@ -15,6 +15,7 @@ from datetime import datetime as dt
 import queryStockDb as qs
 import pandas as pd
 import numpy as np
+import requests
 
 def downloadCurrentPricesData():
     curTimestamp = time.strftime("%Y-%m-%d %H:%M")
@@ -98,7 +99,49 @@ def downloadCurrentPricesData():
     qs.PushDBDataFrame(df, "current_prices")   
     print "Finished inserting new data!"
     
-    pass
+    
+#Download current prices data from codesword
+def downloadCurrentPricesDataCodesword():
+    curTimestamp = time.strftime("%Y-%m-%d %H:%M")
+    print 'Last Run timestamp: %s' % (curTimestamp)
+    
+    #Get most recent timestamp
+    latestTS = qs.GetLatestTimestamp("current_prices")
+    
+    try:
+        latestTS = latestTS.strftime("%Y-%m-%d+%H:%M:%S")
+    except AttributeError:
+        print "downloadCurrentPricesDataCodesword(): AttributeError"
+
+    #Download all current price data with timestamp greater than latestTS
+    #   from codesword.com
+    url = "http://www.codesword.com/getData.php?allcur&lastupdate=%s" % (latestTS)
+    r = requests.get(url)
+
+    try:
+        df = pd.DataFrame(r.json())
+    except TypeError:
+        print "    No data..."
+        return
+    except:
+        print "    Database is still up to date"
+        return
+    
+    #Get most recent entryid
+    latestid = qs.GetLatestEntryId("current_prices")    
+    if latestid == None:
+        latestid = 0  
+    
+    #Update the indeces using the latestid
+    df.index = df.index + latestid + 1    
+    
+    #set the index name to entryid
+    df.index.names = ["entryid"]
+    
+    #insert new information on the "current_prices" table
+    qs.PushDBDataFrame(df, "current_prices")   
+    print "Finished inserting new data!"
+    
 
 def createCurrentPricesTable():
     #Create the current_prices table if it doesn't exist yet
@@ -109,8 +152,7 @@ def createCurrentPricesTable():
         #create table before adding
         print "creating table current_prices!"
         qs.createCurrentPricesTable()
-    
-    pass
+
 
 #createCurrentPricesTable()
 #downloadCurrentPricesData()
