@@ -36,12 +36,18 @@ def downloadCurrentPricesData():
     #Get the update text to know what time is the data from
     updateText = soup.find(id='TOP_WRAPPER').div.div.div
     textStart = string.find(updateText.span.text, ' ') + 1
+    
+    #Check the text for "today" before proceeding with the extraction 
+    textToday = (updateText.span.text)[:textStart-1]
+    if textToday != "Today":
+        print "Last update of data source was %s." % (textToday)
+        print "Old data... No current price data for today yet..."
+        return
+    
     timeStringRaw = (updateText.span.text)[textStart:]
     timeStringRaw = timeStringRaw.replace(".", "")
     timeMilitary = datetime.datetime.strptime(timeStringRaw, "%I:%M %p").strftime("%H:%M")
     timeMilitary = time.strftime("%Y-%m-%d") + " " + timeMilitary
-    
-    #TODO: Check the text for "today" before proceeding with the extraction
     
     print "Timestamp for values: %s" % (timeMilitary)
     
@@ -95,7 +101,7 @@ def downloadCurrentPricesData():
     pass
 
 def createCurrentPricesTable():
-    #TODO: Create the current_prices table if it doesn't exist yet
+    #Create the current_prices table if it doesn't exist yet
     doesTableExist = qs.checkTableExistence("current_prices")       
     #print "does quote: %s have a table? %s" % (company, doesTableExist)    
 
