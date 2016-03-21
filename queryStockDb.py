@@ -45,8 +45,6 @@ def createTable(table_name):
     
 def createCurrentPricesTable():
     db, cur = StockDBConnect(Namedb)
-#    cur.execute("CREATE DATABASE IF NOT EXISTS %s" %Namedb)
-#    cur.execute("USE %s" % Namedb)
     
     cur.execute("CREATE TABLE IF NOT EXISTS current_prices( \
                 `entryid` INT NOT NULL AUTO_INCREMENT, \
@@ -54,6 +52,22 @@ def createCurrentPricesTable():
                 `company` VARCHAR(16) NULL, \
                 `current` FLOAT NULL, \
                 PRIMARY KEY (`entryid`)) \
+                ENGINE = InnoDB \
+                DEFAULT CHARACTER SET = utf8 \
+                COMMENT = 'table for storing the current prices of the downloaded stock data';")
+    db.close()
+    
+def createOHLCurrentTable():
+    db, cur = StockDBConnect(Namedb)
+    
+    cur.execute("CREATE TABLE IF NOT EXISTS current_ohlc( \
+                `company` VARCHAR(16) NULL, \
+                `timestamp` DATETIME NULL, \
+                `open` FLOAT NULL, \
+                `high` FLOAT NULL, \
+                `low` FLOAT NULL, \
+                `close` FLOAT NULL, \
+                PRIMARY KEY (`company`)) \
                 ENGINE = InnoDB \
                 DEFAULT CHARACTER SET = utf8 \
                 COMMENT = 'table for storing the current prices of the downloaded stock data';")
@@ -76,14 +90,14 @@ def checkTableExistence(table):
 
 def ExecuteQuery(query):
     db, cur = StockDBConnect(Namedb)
-    print query
+    #print query
     ret = 0
     try:
         a = cur.execute(query)
         if a:
             db.commit()
         else:
-            print '>> Warning: Query has no result set (ExecuteQuery)'
+            PrintOut('>> Warning: Query has no result set (ExecuteQuery)')
         
         ret = cur.fetchall()
     except TypeError:
@@ -92,6 +106,32 @@ def ExecuteQuery(query):
     finally:
         db.close()
         return ret
+        
+def calculateOHLCurrent(company):
+    query = "select "
+    query += "'%s' as company, " % (company)
+    query += "(select MAX(timestamp) from current_prices where company = '%s') as timestamp," % (company)
+    query += "ROUND((select current from current_prices where company = '%s' " % (company)
+    query += "AND timestamp > curdate() order by timestamp asc limit 1),4) as open, "
+    query += "ROUND(max(current),4) as high," 
+    query += "ROUND(min(current),4) as low," 
+    query += "ROUND((select current from current_prices where company = '%s'" % (company)
+    query += "AND timestamp > curdate() order by timestamp desc limit 1),4) as close "
+    query += "from current_prices where company = '%s' AND timestamp > curdate()" % (company)
+    
+    #print query    
+    
+    curOHLC = ExecuteQuery(query)
+    return curOHLC
+    
+def insertOHLCurrent(company,ts,op,hi,lo,cl):
+    query = "INSERT INTO current_ohlc (company, timestamp, open, high, low, close) " 
+    query += "VALUES ('%s','%s',%s,%s,%s,%s) " % (company,ts,op,hi,lo,cl)
+    query += "ON DUPLICATE KEY UPDATE "
+    query += "timestamp='%s',open=%s,high=%s,low=%s,close=%s" % (ts,op,hi,lo,cl)
+    
+    ExecuteQuery(query)  
+    pass
 
 def GetQuoteNamesToUpdate():
     db, cur = StockDBConnect(Namedb)

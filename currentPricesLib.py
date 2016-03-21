@@ -17,6 +17,7 @@ import pandas as pd
 import numpy as np
 import requests
 
+#download the current prices of stocks
 def downloadCurrentPricesData():
     curTimestamp = time.strftime("%Y-%m-%d %H:%M")
     print 'Last Run timestamp: %s' % (curTimestamp)
@@ -98,6 +99,9 @@ def downloadCurrentPricesData():
     
     qs.PushDBDataFrame(df, "current_prices")   
     print "Finished inserting new data!"
+
+    #calculate new ohlcurrent and insert to "current_ohlc" table    
+    calcOHLCurrentAll()
     
     
 #Download current prices data from codesword
@@ -140,19 +144,62 @@ def downloadCurrentPricesDataCodesword():
     
     #insert new information on the "current_prices" table
     qs.PushDBDataFrame(df, "current_prices")   
-    print "Finished inserting new data!"
+    print "Finished inserting new data!\n"
+
+    #calculate new ohlcurrent and insert to "current_ohlc" table    
+    calcOHLCurrentAll()
     
+#Calculate the current OHLC for a company
+def calcOHLCurrent(company = None):
+    if (company == None) or (company == ""):
+        print "No company selected"
+        return
+    else:
+        #Add steps calculate the current OHLC for the selected company
+        data = qs.calculateOHLCurrent(company)
+        #print ohlCurrent
+        ohlCur = data[0]
+        
+        #Insert the values to the database
+        qs.insertOHLCurrent(company,ohlCur[1],ohlCur[2],ohlCur[3],ohlCur[4],ohlCur[5])
+        
+
+#Calculate all current OHLC of companies
+def calcOHLCurrentAll():
+    companies = qs.GetQuoteNamesToUpdate()
+    print "Generating OHLCurrent of stocks... "    
+    
+    for data in companies:
+        strlength = len(data[0])
+        company = data[0][0:strlength-1]  
+        
+        #print company
+        print company + ", ",
+        calcOHLCurrent(company)
+        
+    print "finished generation of OHLCurrent"
+
 
 def createCurrentPricesTable():
     #Create the current_prices table if it doesn't exist yet
     doesTableExist = qs.checkTableExistence("current_prices")       
-    #print "does quote: %s have a table? %s" % (company, doesTableExist)    
 
     if doesTableExist == 0:
         #create table before adding
         print "creating table current_prices!"
         qs.createCurrentPricesTable()
+        
+def createCurrentOHLCTable():
+    #Create the current_ohlc table if it doesn't exist yet
+    doesTableExist = qs.checkTableExistence("current_ohlc")         
+
+    if doesTableExist == 0:
+        #create table before adding
+        print "creating table current_ohlc!"
+        qs.createOHLCurrentTable()
 
 
 #createCurrentPricesTable()
 #downloadCurrentPricesData()
+#calcOHLCurrent("tel")
+#calcOHLCurrentAll()
