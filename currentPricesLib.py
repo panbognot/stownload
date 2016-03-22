@@ -99,9 +99,6 @@ def downloadCurrentPricesData():
     
     qs.PushDBDataFrame(df, "current_prices")   
     print "Finished inserting new data!"
-
-    #calculate new ohlcurrent and insert to "current_ohlc" table    
-    calcOHLCurrentAll()
     
     
 #Download current prices data from codesword
