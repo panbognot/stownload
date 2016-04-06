@@ -31,4 +31,4 @@ def deleteOldPrices(days = 10):
     
     pass
 
-deleteOldPrices(10)
+deleteOldPrices(1)

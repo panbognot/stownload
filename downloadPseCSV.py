@@ -14,6 +14,8 @@ import datetime
 import glob, os
 import urllib2
 import time
+from datetime import timedelta as td
+import pandas as pd
 
 def downloadPseCSVdata(quoteData):
     #file to be written to
@@ -49,6 +51,16 @@ def downloadPseCSVdata(quoteData):
         print "company: %s, id: %s, security: %s, stock is UP TO DATE!!!" % (company, id, security)
         return
     else:
+        #Current timestamp
+        curTS = time.strftime("%Y-%m-%d %H:%M:%S.0")
+        #Philippine Market Close Time
+        targetTS = time.strftime("%Y-%m-%d 15:35:00.0")
+        prevTS = (pd.to_datetime("2016-03-11") - td(1)).strftime("%Y-%m-%d 00:00:00.0")
+        if (latestTS == prevTS) and (curTS < targetTS):
+            print "company: %s, id: %s, security: %s, stock is UP TO DATE!!!" % (company, id, security)
+            return
+            #pass
+        
         print "company: %s, id: %s, security: %s, latest timestamp: %s" % (company, id, security, latestTS)
     
     url = 'http://pse.ph/stockMarket/companyInfoHistoricalData.html?method=downloadHistoricData&ajax=true&security=%s' % (security)

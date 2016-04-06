@@ -88,8 +88,14 @@ def checkTableExistence(table):
         db.close()
         return ret
 
-def ExecuteQuery(query):
-    db, cur = StockDBConnect(Namedb)
+def ExecuteQuery(query, db = None, cur = None):
+    useNewConn = True    
+    
+    if (db != None) and (cur != None):
+        useNewConn = False
+    
+    if useNewConn:
+        db, cur = StockDBConnect(Namedb)
     #print query
     ret = 0
     try:
@@ -104,10 +110,19 @@ def ExecuteQuery(query):
         print "ExecuteQuery: Error"
         ret = 0
     finally:
-        db.close()
+        if useNewConn:
+            db.close()
+        
         return ret
         
-def calculateOHLCurrent(company):
+def getDayPrices(company, db=None, cur=None):
+    query = "SELECT * FROM current_prices WHERE company = '%s' " % (company)
+    query += "AND timestamp > curdate()"
+    
+    dayPrices = ExecuteQuery(query, db, cur)
+    return dayPrices
+        
+def calculateOHLCurrent(company, db=None, cur=None):
     query = "select "
     query += "'%s' as company, " % (company)
     query += "(select MAX(timestamp) from current_prices where company = '%s') as timestamp," % (company)
@@ -121,16 +136,16 @@ def calculateOHLCurrent(company):
     
     #print query    
     
-    curOHLC = ExecuteQuery(query)
+    curOHLC = ExecuteQuery(query, db, cur)
     return curOHLC
     
-def insertOHLCurrent(company,ts,op,hi,lo,cl):
+def insertOHLCurrent(company,ts,op,hi,lo,cl,db=None,cur=None):
     query = "INSERT INTO current_ohlc (company, timestamp, open, high, low, close) " 
     query += "VALUES ('%s','%s',%s,%s,%s,%s) " % (company,ts,op,hi,lo,cl)
     query += "ON DUPLICATE KEY UPDATE "
     query += "timestamp='%s',open=%s,high=%s,low=%s,close=%s" % (ts,op,hi,lo,cl)
     
-    ExecuteQuery(query)  
+    ExecuteQuery(query, db, cur)  
     pass
 
 def GetQuoteNamesToUpdate():

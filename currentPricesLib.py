@@ -16,6 +16,8 @@ import queryStockDb as qs
 import pandas as pd
 import numpy as np
 import requests
+import threading
+import Queue
 
 #download the current prices of stocks
 def downloadCurrentPricesData():
@@ -118,7 +120,9 @@ def downloadCurrentPricesDataCodesword():
 
     #Download all current price data with timestamp greater than latestTS
     #   from codesword.com
-    url = "http://www.codesword.com/getData.php?allcur&lastupdate=%s" % (latestTS)
+
+#    url = "http://www.codesword.com/getData.php?allcur&lastupdate=%s" % (latestTS)
+    url = "http://ec2-54-174-162-14.compute-1.amazonaws.com/codesword.com/html/getData.php?allcur&lastupdate=%s" % (latestTS)    
     r = requests.get(url)
 
     try:
@@ -149,24 +153,47 @@ def downloadCurrentPricesDataCodesword():
     calcOHLCurrentAll()
     
 #Calculate the current OHLC for a company
-def calcOHLCurrent(company = None):
+def calcOHLCurrent(company = None, db = None, cur = None):
     if (company == None) or (company == ""):
         print "No company selected"
         return
     else:
-        #Add steps calculate the current OHLC for the selected company
-        data = qs.calculateOHLCurrent(company)
-        #print ohlCurrent
-        ohlCur = data[0]
+        #Add steps to calculate the current OHLC for the selected company
+#        data = qs.calculateOHLCurrent(company, db, cur)
+#        
+#        #print ohlCurrent
+#        ohlCur = data[0]
+        
+        data = qs.getDayPrices(company, db, cur)
+        
+        try:
+            size = len(data)
+            prices = []
+            
+            for elem in data:
+                prices.append(elem[3])
+                
+            maxTS = data[size-1][1]
+            dOpen = prices[0]
+            dHigh = max(prices)
+            dLow = min(prices)
+            dCur = prices[size-1]
+        except:
+            print "[No Data for: %s]" % (company)
+            return
         
         #Insert the values to the database
-        qs.insertOHLCurrent(company,ohlCur[1],ohlCur[2],ohlCur[3],ohlCur[4],ohlCur[5])
-        
+        qs.insertOHLCurrent(company,maxTS,dOpen,dHigh,dLow,dCur, db, cur)
+        pass
 
 #Calculate all current OHLC of companies
 def calcOHLCurrentAll():
+    start = datetime.datetime.now()
     companies = qs.GetQuoteNamesToUpdate()
-    print "Generating OHLCurrent of stocks... "    
+    print "Generating OHLCurrent of stocks... "   
+    
+    #Connect to the stocks database
+    db, cur = qs.StockDBConnect(qs.Namedb)
     
     for data in companies:
         strlength = len(data[0])
@@ -174,9 +201,14 @@ def calcOHLCurrentAll():
         
         #print company
         print company + ", ",
-        calcOHLCurrent(company)
+        calcOHLCurrent(company, db, cur)
+        
+    #Close the stocks database connection
+    db.close()
         
     print "finished generation of OHLCurrent"
+    end = datetime.datetime.now()
+    print "processing time: %s" % (end - start)
 
 
 def createCurrentPricesTable():
@@ -187,6 +219,7 @@ def createCurrentPricesTable():
         #create table before adding
         print "creating table current_prices!"
         qs.createCurrentPricesTable()
+  
         
 def createCurrentOHLCTable():
     #Create the current_ohlc table if it doesn't exist yet
@@ -202,3 +235,110 @@ def createCurrentOHLCTable():
 #downloadCurrentPricesData()
 #calcOHLCurrent("tel")
 #calcOHLCurrentAll()
+
+
+exitFlag = 0
+threadList = ["t1","t2","t3","t4","t5","t6","t7","t8"]
+queueLock = threading.Lock()
+workQueue = 0
+threads = []
+
+
+class myThread (threading.Thread):
+    def __init__(self, threadID, name, q, db=None, cur=None):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+        self.q = q
+        self.db = db
+        self.cur = cur
+    
+    def run(self):
+        print "Starting " + self.name
+        calcOHLCurrentThread(self.name, self.q, self.db, self.cur)
+        print "Exiting " + self.name
+        
+
+def calcOHLCurrentThread(threadName, q, db=None, cur=None):
+    while not exitFlag:
+        queueLock.acquire()
+        if not workQueue.empty():
+            company = q.get()
+            calcOHLCurrent(company, db, cur)
+            queueLock.release()
+            qs.PrintOut("%s processing %s" % (threadName, company))
+        else:
+            queueLock.release()
+        
+
+#Multi Threaded way of calculating OHLCurrent All
+def calcOHLCurrentAllMT():
+    start = datetime.datetime.now()    
+    
+    threadID = 1    
+    
+    companies = qs.GetQuoteNamesToUpdate()
+    global workQueue
+    workQueue = Queue.Queue(len(companies))
+    print "Generating OHLCurrent of stocks... "       
+    
+    #Connect to the stocks database
+    db, cur = qs.StockDBConnect(qs.Namedb)    
+    
+    #Create new threads
+    for tName in threadList:
+        thread = myThread(threadID, tName, workQueue, db, cur)
+        thread.start()
+        threads.append(thread)
+        threadID += 1
+        
+    #Fill the queue
+    queueLock.acquire()
+    for data in companies:
+        strlength = len(data[0])
+        company = data[0][0:strlength-1]  
+        
+        #print company
+#        print company + ", ",
+#        calcOHLCurrent(company)
+        workQueue.put(company)
+    queueLock.release()
+    
+    #Wait for queue to empty
+    while not workQueue.empty():
+        pass
+    
+    #Notify threads it's time to exit
+    global exitFlag
+    exitFlag = 1
+    
+    #Wait for all threads to complete
+    for t in threads:
+        t.join()
+    
+    #Close the stocks database connection
+    db.close()    
+    
+    end = datetime.datetime.now()
+    print "processing time: %s" % (end - start)
+    
+    print "Exiting Main Thread"
+
+
+#calcOHLCurrentAllMT()
+#calcOHLCurrentAll()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
