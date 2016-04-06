@@ -103,7 +103,7 @@ def downloadCurrentPricesData():
     print "Finished inserting new data!"
 
     #calculate new ohlcurrent and insert to "current_ohlc" table    
-    calcOHLCurrentAll()    
+#    calcOHLCurrentAll()    
     
 #Download current prices data from codesword
 def downloadCurrentPricesDataCodesword():
