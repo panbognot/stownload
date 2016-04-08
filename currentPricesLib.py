@@ -103,7 +103,7 @@ def downloadCurrentPricesData():
     print "Finished inserting new data!"
 
     #calculate new ohlcurrent and insert to "current_ohlc" table    
-    calcOHLCurrentAll()    
+    calcOHLCurrentAll(df)    
     
 #Download current prices data from codesword
 def downloadCurrentPricesDataCodesword():
@@ -150,44 +150,82 @@ def downloadCurrentPricesDataCodesword():
     print "Finished inserting new data!\n"
 
     #calculate new ohlcurrent and insert to "current_ohlc" table    
-    calcOHLCurrentAll()
+    calcOHLCurrentAll(df)
     
 #Calculate the current OHLC for a company
-def calcOHLCurrent(company = None, db = None, cur = None):
+def calcOHLCurrent(company = None, db = None, cur = None, daydata = pd.DataFrame()):
     if (company == None) or (company == ""):
         print "No company selected"
         return
     else:
-        #Add steps to calculate the current OHLC for the selected company
-#        data = qs.calculateOHLCurrent(company, db, cur)
-#        
-#        #print ohlCurrent
-#        ohlCur = data[0]
-        
-        data = qs.getDayPrices(company, db, cur)
+        curdate = datetime.datetime.now().strftime('%Y-%m-%d') 
         
         try:
-            size = len(data)
-            prices = []
-            
-            for elem in data:
-                prices.append(elem[3])
-                
-            maxTS = data[size-1][1]
-            dOpen = prices[0]
-            dHigh = max(prices)
-            dLow = min(prices)
-            dCur = prices[size-1]
+            ret = qs.getOHLCurrent(company, db, cur)     
+            retTS = (ret[0][1]).strftime('%Y-%m-%d %H:%M:%S')
+            retOpen = ret[0][2]
+            retHigh = ret[0][3]
+            retLow = ret[0][4]
+            retCur = ret[0][5]
         except:
-            print "[No Data for: %s]" % (company)
-            return
+            retTS = None             
         
+        #Add steps to calculate the current OHLC for the selected company
+        if daydata.empty or (retTS == None) or (retTS < curdate): 
+            data = qs.getDayPrices(company, db, cur)
+            
+            try:
+                size = len(data)
+                prices = []
+                
+                for elem in data:
+                    prices.append(elem[3])
+                    
+                maxTS = data[size-1][1]
+                dOpen = prices[0]
+                dHigh = max(prices)
+                dLow = min(prices)
+                dCur = prices[size-1]
+            except:
+                print "[No Data for: %s]" % (company)
+                return
+        else:
+            data = daydata[daydata.timestamp > curdate]
+            
+            size = len(data)
+            
+            maxTS = data.timestamp.max()
+            minTS = data.timestamp.min()
+            
+            dOpen = data.iloc[0].current
+            dHigh = data.current.max()
+            dLow = data.current.min()
+            dCur = data.iloc[size-1].current
+                          
+            if retTS > curdate:
+                dOpen = retOpen
+                
+            #Check if maxTS is greater than recorded OHLCurrent timestamp then
+            # maintain its value
+            if retTS > maxTS:
+                maxTS = retTS
+                dCur = retCur
+            
+            #If the recorded OHLCurrent high has a higher high then 
+            # maintain its value
+            if retHigh > dHigh:
+                dHigh = retHigh
+                
+            #If the recorded OHLCurrent low has a lower low then
+            # maintain its value
+            if retLow < dLow:
+                dLow = retLow
+
         #Insert the values to the database
         qs.insertOHLCurrent(company,maxTS,dOpen,dHigh,dLow,dCur, db, cur)
-        pass
 
 #Calculate all current OHLC of companies
-def calcOHLCurrentAll():
+def calcOHLCurrentAll(df=pd.DataFrame()):
     start = datetime.datetime.now()
     companies = qs.GetQuoteNamesToUpdate()
     print "Generating OHLCurrent of stocks... "   
@@ -201,7 +239,12 @@ def calcOHLCurrentAll():
         
         #print company
         print company + ", ",
-        calcOHLCurrent(company, db, cur)
+        
+        if df.empty:
+            calcOHLCurrent(company, db, cur)
+        else:
+            temp = df[df.company == company.upper()]
+            calcOHLCurrent(company, db, cur, temp)
         
     #Close the stocks database connection
     db.close()

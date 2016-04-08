@@ -115,12 +115,26 @@ def ExecuteQuery(query, db = None, cur = None):
         
         return ret
         
-def getDayPrices(company, db=None, cur=None):
+def getDayPrices(company=None, db=None, cur=None):
+    if company == None:
+        print "No company selected"
+        return
+    
     query = "SELECT * FROM current_prices WHERE company = '%s' " % (company)
     query += "AND timestamp > curdate()"
     
     dayPrices = ExecuteQuery(query, db, cur)
     return dayPrices
+    
+def getOHLCurrent(company=None, db=None, cur=None):
+    if company == None:
+        print "No company selected"
+        return
+        
+    query = "SELECT * FROM current_ohlc WHERE company = '%s' " % (company)
+    
+    ohlCurrent = ExecuteQuery(query, db, cur)
+    return ohlCurrent
         
 def calculateOHLCurrent(company, db=None, cur=None):
     query = "select "
