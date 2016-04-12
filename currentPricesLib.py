@@ -213,13 +213,29 @@ def calcOHLCurrent(company = None, db = None, cur = None, daydata = pd.DataFrame
             
             #If the recorded OHLCurrent high has a higher high then 
             # maintain its value
-            if retHigh > dHigh:
+            if (retHigh > dHigh) and (retHigh > retOpen) and (retHigh > retCur):
                 dHigh = retHigh
+                
+            #If open price is higher than the current high
+            elif (retOpen > dHigh) and (retOpen > retHigh) and (retOpen > retCur):
+                dHigh = retOpen
+                
+            #If returned current price is higher than the current high
+            elif (retCur > dHigh) and (retCur > retHigh) and (retCur > retOpen):
+                dHigh = retCur
                 
             #If the recorded OHLCurrent low has a lower low then
             # maintain its value
-            if retLow < dLow:
+            if (retLow < dLow) and (retLow < retOpen) and (retLow < retCur):
                 dLow = retLow
+                
+            #If open price is lower than current low
+            elif (retOpen < dLow) and (retOpen < retLow) and (retOpen < retCur):
+                dLow = retOpen
+                
+            #If returned current price is lower than the current low
+            elif (retCur < dLow) and (retCur < retLow) and (retCur < retOpen):
+                dLow = retCur
 
         #Insert the values to the database
         qs.insertOHLCurrent(company,maxTS,dOpen,dHigh,dLow,dCur, db, cur)
