@@ -13,7 +13,10 @@ import platform
 curOS = platform.system()
 
 if curOS == "Windows":
-    import MySQLdb as mysqlDriver
+    if platform.machine().endswith('86'):
+        import pymysql as mysqlDriver
+    else:
+        import MySQLdb as mysqlDriver
 elif curOS == "Linux":
     import pymysql as mysqlDriver
 
