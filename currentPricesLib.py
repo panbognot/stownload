@@ -315,11 +315,11 @@ def downloadTopGainersData():
 
     #Proceed only if the current timestamp is greater than the latest
     #   timestamp in the database
-#    if timeMilitary > latestTS:
-#        print "Proceed with inserting current prices"
-#    else:
-#        print "Current prices are still up-to-date!"
-#        return
+    if timeMilitary > latestTS:
+        print "Proceed with inserting Top Gainers"
+    else:
+        print "Top Gainers are still up-to-date!"
+        return
 
     #Get the table
     companyTableBody = soup.find('tbody')

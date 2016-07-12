@@ -152,6 +152,14 @@ def getOHLCurrent(company=None, db=None, cur=None):
     
     ohlCurrent = ExecuteQuery(query, db, cur)
     return ohlCurrent
+    
+def getTopGainers(limit=25, db=None, cur=None):
+    query = "SELECT DATE_FORMAT(timestamp,'%b-%d %H:%i') as timestamp, company, percentage FROM current_gainers "
+    query += "WHERE timestamp = (SELECT MAX(timestamp) FROM current_gainers) "
+    query += "ORDER BY percentage DESC LIMIT %s" % (limit)
+    
+    topGainers = ExecuteQuery(query, db, cur)
+    return topGainers
         
 def calculateOHLCurrent(company, db=None, cur=None):
     query = "select "
