@@ -18,7 +18,7 @@ del path
 
 import dewsSocketLeanLib as dsll
 
-topGainers = qs.getTopGainers();
+topGainers = qs.getTopGainers(15);
 lastTS = topGainers[0][0]
 msg = "codesword recommendations (%s):\n" % (lastTS)
 for gainer in topGainers:
