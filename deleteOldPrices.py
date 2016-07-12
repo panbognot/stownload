@@ -25,9 +25,11 @@ def deleteOldPrices(days = 10):
     
     #compose query for deleting old entries
     query = 'delete from current_prices where timestamp < "%s"' % (oldestDate)  
+    query2 = 'delete from current_gainers where timestamp < "%s"' % (oldestDate)
     
     #execute query
     qs.ExecuteQuery(query)
+    qs.ExecuteQuery(query2)
     
     pass
 

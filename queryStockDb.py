@@ -58,7 +58,7 @@ def createCurrentPricesTable():
                 ENGINE = InnoDB \
                 DEFAULT CHARACTER SET = utf8 \
                 COMMENT = 'table for storing the current prices of the downloaded stock data';")
-    db.close()
+    db.close()    
     
 def createOHLCurrentTable():
     db, cur = StockDBConnect(Namedb)
@@ -75,6 +75,20 @@ def createOHLCurrentTable():
                 DEFAULT CHARACTER SET = utf8 \
                 COMMENT = 'table for storing the current prices of the downloaded stock data';")
     db.close()
+    
+def createCurrentTopGainersTable():
+    db, cur = StockDBConnect(Namedb)
+    
+    cur.execute("CREATE TABLE IF NOT EXISTS current_gainers( \
+                `entryid` INT NOT NULL AUTO_INCREMENT, \
+                `company` VARCHAR(16) NOT NULL, \
+                `timestamp` DATETIME NOT NULL, \
+                `percentage` FLOAT NOT NULL, \
+                PRIMARY KEY (`entryid`)) \
+                ENGINE = InnoDB \
+                DEFAULT CHARACTER SET = utf8 \
+                COMMENT = 'table for storing the current prices of the downloaded stock data';")
+    db.close()    
     
 def checkTableExistence(table):
     db, cur = StockDBConnect(Namedb)
