@@ -25,4 +25,5 @@ for gainer in topGainers:
     msg = msg + "%s %s%%\n" % (gainer[1], gainer[2])
 
 curTS = datetime.now()
-dsll.sendToWSSToGSM(curTS, "09980619501,09988987161", msg)
+dsll.sendToWSSToGSM(curTS, "09980619501", msg)
+dsll.sendToWSSToGSM(curTS, "09988987161", msg)
