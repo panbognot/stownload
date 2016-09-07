@@ -142,8 +142,8 @@ def formatToWSSToGSMtext(timestamp, recipient, message):
     return jsonText   
     
 def sendDataToDEWS(msg):
-#    host = "www.dewslandslide.com"
-    host = "www.codesword.com"
+    host = "www.dewslandslide.com"
+#    host = "www.codesword.com"
     port = 5050
     success = sendDataToWSS(host, port, msg)
     return success
