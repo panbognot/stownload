@@ -71,7 +71,7 @@ def getSOHLCAVV(company, targetdate):
 
 #Run the trade simulator
 def runTradeSimulator():
-    securities = qs.GetQuoteNamesToUpdate()
+    securities = qs.GetQuoteNamesToUpdate("a")
     #print securities
 
     #Get the trade signals for all stocks
@@ -82,7 +82,7 @@ def runTradeSimulator():
         getTradeSignals(security)
         
     #TODO: Select starting date (for now: 6 month trading period)
-    tradingPeriodMonths = 6
+    tradingPeriodMonths = 3
     timeDelta = tradingPeriodMonths * 30
     dFormat = "%Y-%m-%d"
     
@@ -93,6 +93,7 @@ def runTradeSimulator():
     #TODO: Initial capital (for now: unlimited funds)
     capital = 500000
     valueLimit = 50000
+    holdLimit = 10
 
     global stocksHeld
     
@@ -109,35 +110,47 @@ def runTradeSimulator():
             tempCompany = row['company']
             ohlcavv = getSOHLCAVV(tempCompany, curDate)
             
-            #filter out stocks with low activity (low value) 
-            if (float)(ohlcavv.iloc[0]['value']) < 500000:
-                #filter out stocks with trade value less than 1 Million (arbitrary value)
-                buyOptions = buyOptions[buyOptions.company != tempCompany]
-                continue
-            
-            #TODO: filter out stocks that are on a down trend
-            
-            #Buy the stock if it passes the filters
-            buyPrice = (float)(ohlcavv.iloc[0]['close'])
-            lotSize = 0
-
-            if buyPrice < 1:
-                lotSize = 10000    
-            elif buyPrice < 10:
-                lotSize = 1000
-            elif buyPrice < 100:
-                lotSize = 100
-            elif buyPrice < 1000:
-                lotSize = 10
-            else:
-                lotSize = 5
-            
-            priceBuyLot = lotSize * buyPrice
-            valueBought = valueLimit - (valueLimit % priceBuyLot)
-            volumeBought = valueBought * lotSize / priceBuyLot
-
-            tempJson = [{"company":tempCompany,"shares":volumeBought,"buyprice":buyPrice,"sellprice":"tba","datebought":curDate,"datesold":"tba","profit":0}]
-            stocksHeld = stocksHeld.append(pd.DataFrame(tempJson), ignore_index=True)            
+            try:
+                #filter out stocks with low activity (low value) 
+                if (float)(ohlcavv.iloc[0]['value']) < 500000:
+                    #filter out stocks with trade value less than 1 Million (arbitrary value)
+                    buyOptions = buyOptions[buyOptions.company != tempCompany]
+                    continue
+                
+                #TODO: filter out stocks that are on a down trend
+                
+                #Buy the stock if it passes the filters
+                buyPrice = (float)(ohlcavv.iloc[0]['close'])
+                lotSize = 0
+    
+                if buyPrice < 1:
+                    lotSize = 10000    
+                elif buyPrice < 10:
+                    lotSize = 1000
+                elif buyPrice < 100:
+                    lotSize = 100
+                elif buyPrice < 1000:
+                    lotSize = 10
+                else:
+                    lotSize = 5
+                
+                try:
+                    currentlyOnHold = stocksHeld[stocksHeld.datesold=='tba']
+                    holdCount = len(currentlyOnHold.index)
+                except:
+                    holdCount = 0
+                
+                if holdCount < holdLimit:            
+                    priceBuyLot = lotSize * buyPrice
+                    valueBought = valueLimit - (valueLimit % priceBuyLot)
+                    volumeBought = valueBought * lotSize / priceBuyLot
+        
+                    tempJson = [{"company":tempCompany,"shares":volumeBought,"buyprice":buyPrice,"sellprice":"tba","datebought":curDate,"datesold":"tba","profit":0}]
+                    stocksHeld = stocksHeld.append(pd.DataFrame(tempJson), ignore_index=True)      
+                else:
+                    print "Already at maximum hold limit"
+            except:
+                pass
             
         #Choose from stocks with buy signal
         #TODO: Randomly choose from all the available stocks with buy signal for the day
@@ -152,7 +165,7 @@ def runTradeSimulator():
             
         if sellOptions.empty:
             print "Nothing to sell for today"
-#        else:
+        else:
 #            print sellOptions
             
             if not stocksHeld.empty: 
@@ -181,6 +194,9 @@ def runTradeSimulator():
     
 runTradeSimulator()
 
+#TODO: Sell the stocks being held
+
+print "Total Profit: %s" % (stocksHeld['profit'].sum())
 
 
 

@@ -64,8 +64,8 @@ else:
     valueBought = valueLimit - (valueLimit % priceBuyLot)
     volumeBought = valueBought * lotSize / priceBuyLot
     
-    
-    
+securities = qs.GetQuoteNamesToUpdate('bluechip')    
+print securities    
     
     
     
