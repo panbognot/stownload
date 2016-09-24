@@ -187,11 +187,18 @@ def insertOHLCurrent(company,ts,op,hi,lo,cl,db=None,cur=None):
     ExecuteQuery(query, db, cur)  
     pass
 
-def GetQuoteNamesToUpdate():
+def GetQuoteNamesToUpdate(stockClass=None):
     db, cur = StockDBConnect(Namedb)
     #cur.execute("CREATE DATABASE IF NOT EXISTS %s" %nameDB)
     try:
-        query = "SELECT lower(stock_quotes.quote) AS quote, id, security FROM stock_quotes"
+        whereClause = ""        
+        
+        if stockClass == "bluechip":
+            whereClause = "WHERE class like 'Blue Chip' order by quote"
+        elif stockClass == "a":
+            whereClause = "WHERE class = 'A' or class like 'Blue Chip' order by quote"
+            
+        query = "SELECT lower(stock_quotes.quote) AS quote, id, security FROM stock_quotes " + whereClause
         cur.execute(query)
     except:
         print "Error in getting stock quotes list"
