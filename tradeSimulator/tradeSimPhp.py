@@ -23,11 +23,17 @@ del path
 
 import queryStockDb as qs
 
+isDebug = True
+
 #Initialize the data frames for all buy and sell signals of all stocks
 allBuys = pd.DataFrame()
 allSells = pd.DataFrame()
 #TODO: company,shares,buyprice,sellprice,datebought,datesold,profit
 stocksHeld = pd.DataFrame()
+
+def debugPrint(inputString):
+    if isDebug:
+        print inputString
 
 def getTradeSignals(company):
     global allBuys
@@ -70,19 +76,20 @@ def getSOHLCAVV(company, targetdate):
         return pd.DataFrame()    
 
 #Run the trade simulator
-def runTradeSimulator():
+def runTradeSimulator(capital=500000, holdLimit=5, periodMonths=5):
     securities = qs.GetQuoteNamesToUpdate("a")
     #print securities
 
     #Get the trade signals for all stocks
     for companyInfo in securities:
         security = companyInfo[0].replace("_","")
-        print security
+#        print security
+        debugPrint(security)
         
         getTradeSignals(security)
         
     #TODO: Select starting date (for now: 6 month trading period)
-    tradingPeriodMonths = 3
+    tradingPeriodMonths = periodMonths
     timeDelta = tradingPeriodMonths * 30
     dFormat = "%Y-%m-%d"
     
@@ -91,16 +98,15 @@ def runTradeSimulator():
     dCtr = 0    
     
     #TODO: Initial capital (for now: unlimited funds)
-    capital = 500000
-    valueLimit = 50000
-    holdLimit = 10
+    valueLimit = capital / holdLimit
 
     global stocksHeld
     
     while dCtr <= timeDelta:
         tradingCurDate = tradingStartDate + timedelta(days=dCtr)
         curDate = tradingCurDate.strftime(dFormat)
-        print curDate
+        debugPrint(curDate)
+#        print curDate
 
         #Get the buy options list
         buyOptions = allBuys[allBuys['date']==curDate]
@@ -148,23 +154,27 @@ def runTradeSimulator():
                     tempJson = [{"company":tempCompany,"shares":volumeBought,"buyprice":buyPrice,"sellprice":"tba","datebought":curDate,"datesold":"tba","profit":0}]
                     stocksHeld = stocksHeld.append(pd.DataFrame(tempJson), ignore_index=True)      
                 else:
-                    print "Already at maximum hold limit"
+#                    print "Already at maximum hold limit"
+                    debugPrint("Already at maximum hold limit")
             except:
                 pass
             
         #Choose from stocks with buy signal
         #TODO: Randomly choose from all the available stocks with buy signal for the day
         if buyOptions.empty:
-            print "Nothing to buy for today"
+#            print "Nothing to buy for today"
+            debugPrint("Nothing to buy for today")
         else:
-            print buyOptions
+#            print buyOptions
+            debugPrint(buyOptions)
             
         #TODO: Sell when there is a "sell: cut losses"
         #from the list of stocks you are holding
         sellOptions = allSells[(allSells['date']==curDate) & (allSells['signal']=='sell: cut losses')]
             
         if sellOptions.empty:
-            print "Nothing to sell for today"
+#            print "Nothing to sell for today"
+            debugPrint("Nothing to sell for today")
         else:
 #            print sellOptions
             
@@ -192,11 +202,26 @@ def runTradeSimulator():
         #Increment the day counter
         dCtr = dCtr + 1
     
-runTradeSimulator()
 
+runTradeSimulator(capital=500000, holdLimit=1, periodMonths=10)
 #TODO: Sell the stocks being held
-
 print "Total Profit: %s" % (stocksHeld['profit'].sum())
+
+#ctr = 10
+#while ctr > 0:
+#    print "[Month %s]" % (ctr)    
+#    
+#    #Initialize the data frames for all buy and sell signals of all stocks
+#    allBuys = pd.DataFrame()
+#    allSells = pd.DataFrame()
+#    #TODO: company,shares,buyprice,sellprice,datebought,datesold,profit
+#    stocksHeld = pd.DataFrame()
+#    
+#    runTradeSimulator(capital=500000, holdLimit=1, periodMonths=ctr)
+#    #TODO: Sell the stocks being held
+#    print "Total Profit: %s" % (stocksHeld['profit'].sum())
+#    
+#    ctr = ctr - 1
 
 
 
